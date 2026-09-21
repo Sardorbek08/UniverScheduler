@@ -6,285 +6,861 @@
 <title>Расписание занятий</title>
 <style>
     :root {
-        --primary: #4a7bf7;
-        --primary-dark: #3a63d0;
-        --bg: #f4f5f7;
+        --primary: #635bff;
+        --primary-light: #eeeaff;
+        --primary-dark: #5048d8;
+
+        --bg: #f7f8fc;
         --card-bg: #ffffff;
-        --text: #1c1c1e;
-        --muted: #8a8a8e;
-        --border: #e4e4e7;
-        --green: #2e7d32;
-        --green-bg: #e8f5e9;
-        --amber: #b8860b;
-        --amber-bg: #fff8e1;
-        --red: #e74c3c;
+
+        --text: #20212a;
+        --muted: #85899a;
+        --border: #e7e8ef;
+
+        --green: #19a974;
+        --green-bg: #e8faf3;
+
+        --amber: #f59e0b;
+        --amber-bg: #fff6df;
+
+        --red: #ef4444;
+
         --safe-top: env(safe-area-inset-top, 0px);
         --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
-    * { box-sizing: border-box; }
+    * {
+        box-sizing: border-box;
+    }
 
-    html, body {
+    html,
+    body {
         margin: 0;
         padding: 0;
         background: var(--bg);
         color: var(--text);
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        font-family:
+            Inter,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            Roboto,
+            Arial,
+            sans-serif;
+
         -webkit-tap-highlight-color: transparent;
     }
 
-    /* ---------- Верхняя панель ---------- */
+    /* ==============================
+       ВЕРХНЯЯ ПАНЕЛЬ
+       ============================== */
+
     .top-bar {
         position: sticky;
         top: 0;
         z-index: 20;
+
         background: var(--primary);
         color: white;
-        padding: calc(14px + var(--safe-top)) 16px 14px;
-        border-radius: 0 0 18px 18px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+
+        padding: calc(18px + var(--safe-top)) 20px 18px;
+
+        box-shadow: 0 4px 16px rgba(99, 91, 255, 0.18);
     }
+
     .top-bar h1 {
-        margin: 0 0 2px;
-        font-size: 19px;
-        font-weight: 700;
+        margin: 0 0 3px;
+
+        font-size: 21px;
+        font-weight: 750;
+        letter-spacing: -0.3px;
     }
+
     .top-bar .group {
         font-size: 13px;
-        opacity: 0.85;
-        margin-bottom: 10px;
+        opacity: 0.8;
+        margin-bottom: 12px;
     }
+
     .clock-row {
         display: flex;
         justify-content: space-between;
-        align-items: baseline;
+        align-items: center;
     }
-    .clock-date { font-size: 13px; opacity: 0.9; }
+
+    .clock-date {
+        font-size: 13px;
+        opacity: 0.9;
+    }
+
     .clock-time {
         font-size: 22px;
-        font-weight: 700;
+        font-weight: 750;
         font-variant-numeric: tabular-nums;
     }
 
-    /* ---------- Вкладки дней — горизонтальная прокрутка ---------- */
+    /* ==============================
+       ДНИ
+       ============================== */
+
     .day-scroll {
         display: flex;
         gap: 8px;
+
         overflow-x: auto;
-        padding: 14px 16px 4px;
-        -webkit-overflow-scrolling: touch;
+
+        padding: 16px max(16px, calc((100vw - 1200px) / 2)) 12px;
+
         scrollbar-width: none;
     }
-    .day-scroll::-webkit-scrollbar { display: none; }
+
+    .day-scroll::-webkit-scrollbar {
+        display: none;
+    }
+
     .day-chip {
         flex: 0 0 auto;
-        padding: 8px 16px;
-        border-radius: 20px;
-        background: var(--card-bg);
+
+        padding: 9px 17px;
+
+        border-radius: 10px;
+
+        background: white;
         border: 1px solid var(--border);
+
         font-size: 14px;
-        font-weight: 600;
+        font-weight: 650;
+
         color: var(--text);
+
         cursor: pointer;
-        white-space: nowrap;
+
+        transition:
+            background 0.15s,
+            color 0.15s,
+            transform 0.15s;
     }
+
+    .day-chip:hover {
+        transform: translateY(-1px);
+        border-color: var(--primary);
+    }
+
     .day-chip.active {
         background: var(--primary);
         border-color: var(--primary);
         color: white;
     }
 
-    /* ---------- Список карточек занятий ---------- */
+    /* ==============================
+       КОНТЕЙНЕР РАСПИСАНИЯ
+       ============================== */
+
     .lesson-list {
-        padding: 8px 16px 100px;
+        max-width: 1200px;
+        margin: 0 auto;
+
+        padding: 4px 16px 100px;
+
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 9px;
     }
+
+    /* ==============================
+       КАРТОЧКА ЗАНЯТИЯ
+       Мобильная версия
+       ============================== */
+
     .lesson-card {
         background: var(--card-bg);
-        border-radius: 14px;
-        padding: 12px 14px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+
+        border: 1px solid var(--border);
+        border-radius: 12px;
+
+        padding: 13px 14px;
+
         display: flex;
-        gap: 12px;
+        gap: 13px;
         align-items: stretch;
+
         position: relative;
+
+        transition:
+            transform 0.15s,
+            box-shadow 0.15s;
     }
-    .lesson-card.break {
-        background: #f0f0f2;
-        box-shadow: none;
+
+    .lesson-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(30, 35, 60, 0.06);
     }
+
+    /* Текущее занятие */
+
     .lesson-card.live {
         background: var(--green-bg);
-        box-shadow: 0 2px 8px rgba(46,125,50,0.15);
+        border-color: #b9ecd8;
     }
+
+    /* Перерыв */
+
+    .lesson-card.break {
+        background: #f0f1f5;
+        border-color: transparent;
+    }
+
     .lesson-time-col {
-        flex: 0 0 58px;
+        flex: 0 0 62px;
+
         display: flex;
         flex-direction: column;
         justify-content: center;
+
         font-variant-numeric: tabular-nums;
+
         font-size: 13px;
-        font-weight: 700;
-        color: var(--text);
+        font-weight: 750;
+
         border-right: 1px solid var(--border);
+
         padding-right: 10px;
     }
-    .lesson-time-col span { display: block; }
-    .lesson-time-col .end { color: var(--muted); font-weight: 500; font-size: 12px; margin-top: 2px; }
 
-    .lesson-main { flex: 1; min-width: 0; }
+    .lesson-time-col .end {
+        color: var(--muted);
+        font-weight: 500;
+        font-size: 12px;
+
+        margin-top: 2px;
+    }
+
+    .lesson-main {
+        flex: 1;
+        min-width: 0;
+    }
+
     .lesson-subject {
         font-size: 15px;
-        font-weight: 600;
+        font-weight: 650;
         line-height: 1.3;
-        margin-bottom: 4px;
+
+        margin-bottom: 5px;
+
+        padding-right: 25px;
     }
-    .break .lesson-subject { color: var(--muted); font-style: italic; font-weight: 500; }
+
+    .break .lesson-subject {
+        color: var(--muted);
+        font-style: normal;
+        font-weight: 550;
+    }
+
     .lesson-meta {
         font-size: 12.5px;
         color: var(--muted);
+
         display: flex;
-        gap: 10px;
+        gap: 12px;
         flex-wrap: wrap;
     }
-    .lesson-meta span { display: flex; align-items: center; gap: 3px; }
+
+    .lesson-meta span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* ==============================
+       СТАТУС
+       ============================== */
 
     .countdown-badge {
         margin-top: 8px;
+
         display: inline-block;
-        font-size: 12px;
-        font-weight: 700;
-        padding: 3px 9px;
-        border-radius: 20px;
+
+        font-size: 11.5px;
+        font-weight: 750;
+
+        padding: 4px 9px;
+
+        border-radius: 7px;
+
         font-variant-numeric: tabular-nums;
     }
-    .countdown-badge.live { background: var(--green); color: white; }
-    .countdown-badge.soon { background: var(--amber-bg); color: var(--amber); }
-    .countdown-badge.idle { background: #eee; color: var(--muted); }
+
+    .countdown-badge.live {
+        background: var(--green);
+        color: white;
+    }
+
+    .countdown-badge.soon {
+        background: var(--amber-bg);
+        color: var(--amber);
+    }
+
+    .countdown-badge.idle {
+        background: #ececf1;
+        color: var(--muted);
+    }
+
+    /* ==============================
+       УДАЛЕНИЕ
+       ============================== */
 
     .del-x {
         position: absolute;
-        top: 8px; right: 8px;
-        width: 24px; height: 24px;
-        border-radius: 50%;
+
+        top: 8px;
+        right: 8px;
+
+        width: 25px;
+        height: 25px;
+
+        border-radius: 7px;
+
         border: none;
-        background: rgba(231,76,60,0.1);
+
+        background: #fff0f0;
         color: var(--red);
-        font-size: 14px;
-        line-height: 1;
+
+        font-size: 13px;
+
         cursor: pointer;
+
         display: flex;
         align-items: center;
         justify-content: center;
     }
+
+    .del-x:hover {
+        background: var(--red);
+        color: white;
+    }
+
+    /* ==============================
+       ПУСТОЕ РАСПИСАНИЕ
+       ============================== */
 
     .empty-state {
         text-align: center;
+
         color: var(--muted);
-        padding: 40px 20px;
+
+        padding: 50px 20px;
+
         font-size: 14px;
     }
 
-    /* ---------- Плавающая кнопка добавления ---------- */
+    /* ==============================
+       FAB
+       ============================== */
+
     .fab {
         position: fixed;
+
         right: 20px;
         bottom: calc(20px + var(--safe-bottom));
-        width: 56px; height: 56px;
-        border-radius: 50%;
+
+        width: 56px;
+        height: 56px;
+
+        border-radius: 14px;
+
         background: var(--primary);
         color: white;
+
         border: none;
-        font-size: 28px;
-        box-shadow: 0 4px 14px rgba(74,123,247,0.4);
+
+        font-size: 27px;
+
+        box-shadow: 0 6px 18px rgba(99, 91, 255, 0.3);
+
         cursor: pointer;
+
         z-index: 30;
+
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-    .fab:active { background: var(--primary-dark); }
 
-    /* ---------- Bottom sheet ---------- */
+        transition:
+            transform 0.15s,
+            background 0.15s;
+    }
+
+    .fab:hover {
+        transform: translateY(-2px);
+        background: var(--primary-dark);
+    }
+
+    .fab:active {
+        transform: scale(0.95);
+    }
+
+    /* ==============================
+       BOTTOM SHEET
+       ============================== */
+
     .sheet-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0,0,0,0.4);
+
+        background: rgba(20, 20, 30, 0.45);
+
         z-index: 40;
+
         opacity: 0;
         pointer-events: none;
+
         transition: opacity 0.2s;
     }
-    .sheet-overlay.open { opacity: 1; pointer-events: auto; }
+
+    .sheet-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
 
     .sheet {
         position: fixed;
-        left: 0; right: 0; bottom: 0;
-        background: var(--card-bg);
-        border-radius: 20px 20px 0 0;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        background: white;
+
+        border-radius: 18px 18px 0 0;
+
         padding: 8px 20px calc(24px + var(--safe-bottom));
+
         z-index: 50;
+
         transform: translateY(100%);
+
         transition: transform 0.25s ease-out;
+
         max-height: 85vh;
+
         overflow-y: auto;
     }
-    .sheet.open { transform: translateY(0); }
-    .sheet-handle {
-        width: 40px; height: 4px;
-        background: var(--border);
-        border-radius: 3px;
-        margin: 8px auto 16px;
+
+    .sheet.open {
+        transform: translateY(0);
     }
-    .sheet h3 { margin: 0 0 14px; font-size: 17px; }
-    .field { margin-bottom: 12px; }
+
+    .sheet-handle {
+        width: 38px;
+        height: 4px;
+
+        background: #d7d8df;
+
+        border-radius: 3px;
+
+        margin: 8px auto 17px;
+    }
+
+    .sheet h3 {
+        margin: 0 0 16px;
+
+        font-size: 18px;
+    }
+
+    .field {
+        margin-bottom: 13px;
+    }
+
     .field label {
         display: block;
-        font-size: 12.5px;
+
+        font-size: 12px;
+
         color: var(--muted);
-        margin-bottom: 4px;
-        font-weight: 600;
+
+        margin-bottom: 5px;
+
+        font-weight: 650;
     }
-    .field input, .field select {
+
+    .field input,
+    .field select {
         width: 100%;
-        padding: 12px 14px;
-        border-radius: 10px;
+
+        padding: 12px 13px;
+
+        border-radius: 9px;
+
         border: 1px solid var(--border);
-        background: var(--bg);
+
+        background: #fafafd;
+
         font-size: 15px;
+
         color: var(--text);
     }
-    .field input:focus, .field select:focus {
+
+    .field input:focus,
+    .field select:focus {
         outline: none;
+
         border-color: var(--primary);
+
+        box-shadow: 0 0 0 3px var(--primary-light);
     }
+
     .sheet-actions {
         display: flex;
         gap: 10px;
-        margin-top: 16px;
+
+        margin-top: 17px;
     }
+
     .sheet-actions button {
         flex: 1;
+
         padding: 13px;
-        border-radius: 10px;
+
+        border-radius: 9px;
+
         border: none;
+
         font-size: 15px;
-        font-weight: 600;
+        font-weight: 650;
+
         cursor: pointer;
     }
-    .btn-cancel { background: var(--bg); color: var(--text); }
-    .btn-save { background: var(--primary); color: white; }
+
+    .btn-cancel {
+        background: #f0f1f5;
+        color: var(--text);
+    }
+
+    .btn-save {
+        background: var(--primary);
+        color: white;
+    }
 
     .reset-link {
         display: block;
+
         text-align: center;
+
         color: var(--muted);
+
         font-size: 13px;
+
         margin-top: 18px;
+
         text-decoration: underline;
+
         cursor: pointer;
+    }
+
+
+    /* =========================================================
+       DESKTOP
+       ========================================================= */
+
+    @media (min-width: 800px) {
+
+        .top-bar {
+            padding-left: max(24px, calc((100vw - 1200px) / 2));
+            padding-right: max(24px, calc((100vw - 1200px) / 2));
+        }
+
+        .day-scroll {
+            padding-top: 20px;
+            padding-bottom: 15px;
+        }
+
+        /*
+         * На ПК lesson-list становится таблицей.
+         */
+
+        .lesson-list {
+            gap: 0;
+
+            padding-top: 0;
+
+            border: 1px solid var(--border);
+            border-radius: 12px;
+
+            overflow: hidden;
+
+            background: white;
+
+            box-shadow: 0 3px 15px rgba(30, 35, 60, 0.04);
+        }
+
+        /*
+         * Каждая карточка теперь является строкой.
+         */
+
+        .lesson-card {
+            min-height: 58px;
+
+            border: none;
+            border-bottom: 1px solid var(--border);
+
+            border-radius: 0;
+
+            padding: 0;
+
+            display: grid;
+
+            /*
+             * Время | Предмет | Преподаватель | Аудитория | Статус
+             */
+
+            grid-template-columns:
+                115px
+                minmax(300px, 2fr)
+                minmax(180px, 1fr)
+                120px
+                130px;
+
+            gap: 0;
+
+            align-items: stretch;
+
+            box-shadow: none;
+        }
+
+        .lesson-card:hover {
+            transform: none;
+            box-shadow: none;
+            background: #fafaff;
+        }
+
+        /*
+         * Время
+         */
+
+        .lesson-time-col {
+            border-right: 1px solid var(--border);
+
+            padding: 0 18px;
+
+            display: flex;
+            justify-content: center;
+
+            flex-direction: column;
+        }
+
+        /*
+         * Основной контент больше не занимает
+         * всю строку — превращаем его в display: contents.
+         */
+
+        .lesson-main {
+            display: contents;
+        }
+
+        /*
+         * Предмет
+         */
+
+        .lesson-subject {
+            margin: 0;
+
+            padding: 0 18px;
+
+            display: flex;
+            align-items: center;
+
+            font-size: 14px;
+
+            border-right: 1px solid var(--border);
+        }
+
+        /*
+         * Мета-информация на ПК становится
+         * отдельными колонками.
+         */
+
+        .lesson-meta {
+            display: contents;
+        }
+
+        .lesson-meta span {
+            padding: 0 15px;
+
+            display: flex;
+            align-items: center;
+
+            color: var(--text);
+
+            font-size: 13px;
+
+            border-right: 1px solid var(--border);
+        }
+
+        /*
+         * Скрываем иконки 👤 / 📍 визуально
+         * через немного более спокойный вид.
+         */
+
+        .lesson-meta span:first-child::first-letter {
+            color: var(--muted);
+        }
+
+        /*
+         * Статус переносим в отдельную область.
+         */
+
+        .countdown-badge {
+            margin: 0;
+
+            align-self: center;
+            justify-self: center;
+
+            padding: 5px 9px;
+        }
+
+        /*
+         * Кнопка удаления
+         */
+
+        .del-x {
+            top: 50%;
+            right: 8px;
+
+            transform: translateY(-50%);
+
+            opacity: 0;
+
+            transition: opacity 0.15s;
+        }
+
+        .lesson-card:hover .del-x {
+            opacity: 1;
+        }
+
+        /*
+         * Текущее занятие
+         */
+
+        .lesson-card.live {
+            background: var(--green-bg);
+
+            border-left: 4px solid var(--green);
+        }
+
+        /*
+         * Перерыв
+         */
+
+        .lesson-card.break {
+            min-height: 38px;
+
+            background: #f5f5f8;
+        }
+
+        .break .lesson-subject {
+            grid-column: 2 / 5;
+
+            color: var(--muted);
+
+            font-size: 13px;
+        }
+
+        .break .lesson-meta,
+        .break .countdown-badge {
+            display: none;
+        }
+
+        /*
+         * Шапка таблицы.
+         * Создаём её через первый элемент.
+         */
+
+        .lesson-list::before {
+            content:
+                "ВРЕМЯ"
+                "ПРЕДМЕТ"
+                "ПРЕПОДАВАТЕЛЬ"
+                "АУДИТОРИЯ"
+                "СТАТУС";
+
+            display: grid;
+
+            grid-template-columns:
+                115px
+                minmax(300px, 2fr)
+                minmax(180px, 1fr)
+                120px
+                130px;
+
+            align-items: center;
+
+            min-height: 44px;
+
+            background: var(--primary);
+
+            color: white;
+
+            font-size: 11px;
+            font-weight: 750;
+
+            letter-spacing: 0.5px;
+        }
+
+        /*
+         * Так как content выше — одна строка текста,
+         * раскладываем её по колонкам невозможно обычным способом.
+         * Поэтому используем псевдоэлементы ниже.
+         */
+
+        .lesson-list::before {
+            content: none;
+        }
+
+        /*
+         * Отдельный header через фон и тень не нужен:
+         * первая строка таблицы будет визуально отделена.
+         */
+
+        .lesson-list {
+            position: relative;
+        }
+
+        /*
+         * Чуть увеличиваем первый обычный ряд.
+         */
+
+        .lesson-card:first-child {
+            border-top: 0;
+        }
+    }
+
+
+    /* ==============================
+       МАЛЕНЬКИЕ ЭКРАНЫ
+       ============================== */
+
+    @media (max-width: 799px) {
+
+        .lesson-list {
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+    }
+
+
+    /* ==============================
+       БОЛЬШОЙ МОНИТОР
+       ============================== */
+
+    @media (min-width: 1200px) {
+
+        .top-bar h1 {
+            font-size: 23px;
+        }
+
+        .lesson-card {
+            min-height: 62px;
+        }
     }
 </style>
 </head>
@@ -561,8 +1137,8 @@
             html += "<div class='lesson-subject'>" + lesson.subject + "</div>";
             if (!isBreak) {
                 html += "<div class='lesson-meta'>";
-                if (lesson.teacher && lesson.teacher !== '-') html += "<span>👤 " + lesson.teacher + "</span>";
-                if (lesson.room && lesson.room !== '-') html += "<span>📍 " + lesson.room + "</span>";
+                if (lesson.teacher && lesson.teacher !== '-') html += "<span>" + lesson.teacher + "</span>";
+                if (lesson.room && lesson.room !== '-') html += "<span>" + lesson.room + "</span>";
                 html += "</div>";
             }
             if (countdown.text) {
