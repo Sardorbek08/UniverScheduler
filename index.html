@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Расписание занятий</title>
+<style>
+    body { font-family: Arial, sans-serif; max-width: 850px; margin: 20px auto; padding: 0 12px; }
+    .clock-box {
+        background: #4a7bf7; color: white; padding: 14px 18px;
+        border-radius: 8px; margin-bottom: 15px; display: flex;
+        justify-content: space-between; align-items: center; flex-wrap: wrap;
+    }
+    .clock-date { font-size: 15px; opacity: 0.9; }
+    .clock-time { font-size: 26px; font-weight: bold; font-variant-numeric: tabular-nums; }
+    .tabs { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
+    .tab-btn {
+        padding: 10px 16px; border: 1px solid #ccc; background: #f0f0f0;
+        cursor: pointer; border-radius: 4px 4px 0 0;
+    }
+    .tab-btn.active { background: #4a7bf7; color: white; border-color: #4a7bf7; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #999; padding: 8px; text-align: left; }
+    th { background-color: #f0f0f0; }
+    .current-lesson { background-color: #d4edda !important; }
+    .break-row { background-color: #f5f5f5; color: #999; font-style: italic; }
+    .break-row.current-lesson { background-color: #fff3cd !important; color: #333; font-style: normal; }
+    .del-btn { background: #e74c3c; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; }
+    .countdown { font-variant-numeric: tabular-nums; font-weight: bold; white-space: nowrap; }
+    .countdown.live { color: #2e7d32; }
+    .countdown.soon { color: #b8860b; }
+    .countdown.idle { color: #999; font-weight: normal; }
+    .add-form { margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 6px; }
+    .add-form label { display: block; margin-top: 8px; font-size: 13px; color: #555; }
+    .add-form input, .add-form select {
+        padding: 6px; width: 100%; box-sizing: border-box; margin-top: 2px;
+    }
+    .btn { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; margin-top: 12px; margin-right: 8px; }
+    .btn-primary { background: #4a7bf7; color: white; }
+    .btn-secondary { background: #999; color: white; }
+</style>
+</head>
+<body>
+
+<h1>Расписание занятий</h1>
+<p>Группа: ИС-23</p>
+
+<div class="clock-box">
+    <div class="clock-date" id="clockDate"></div>
+    <div class="clock-time" id="clockTime"></div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<table id="scheduleTable">
+    <thead>
+    <tr>
+        <th>Время</th>
+        <th>Предмет</th>
+        <th>Преподаватель</th>
+        <th>Аудитория</th>
+        <th>Осталось</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+</table>
+
+<div class="add-form">
+    <h3>Добавить занятие</h3>
+
+    <label>День недели</label>
+    <select id="newDay"></select>
+
+    <label>Время (например: 08:30 09:20)</label>
+    <input type="text" id="newTime" placeholder="08:30 09:20">
+
+    <label>Предмет</label>
+    <input type="text" id="newSubject" placeholder="Предмет">
+
+    <label>Преподаватель</label>
+    <input type="text" id="newTeacher" placeholder="Преподаватель">
+
+    <label>Аудитория</label>
+    <input type="text" id="newRoom" placeholder="Аудитория">
+
+    <button class="btn btn-primary" onclick="addLesson()">Добавить</button>
+    <button class="btn btn-secondary" onclick="resetSchedule()">Сбросить к исходному</button>
+</div>
+
+<script>
+    // ---------- Исходные данные расписания (раньше генерировались через JSP из Java) ----------
+    const initialData = {
+        "Понедельник": [
+            { time: "08:30 09:20", subject: "Конфигурирования в среде 1С (лаб)", teacher: "Асилова Э.А", room: "710Г" },
+            { time: "09:20 09:35", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "09:35 10:25", subject: "Конфигурирования в среде 1С (лаб)", teacher: "Асилова Э.А", room: "710Г" },
+            { time: "10:25 10:40", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "10:40 11:30", subject: "Разработка Web-сервисов (Java EE) (лек)", teacher: "Боташева А.О", room: "705Г" },
+            { time: "11:30 11:45", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "11:45 12:35", subject: "Разработка Web-сервисов (Java EE) (лек)", teacher: "Боташева А.О", room: "705Г" },
+            { time: "12:35 12:50", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "12:50 13:40", subject: "Разработка Web-сервисов (Java EE) (лаб)", teacher: "Асилова Э.А", room: "327Гл" },
+            { time: "13:40 14:00", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "14:00 14:50", subject: "Разработка Web-сервисов (Java EE) (лаб)", teacher: "Асилова Э.А", room: "327Гл" },
+            { time: "14:50 15:05", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "15:55 16:10", subject: "Перерыв", teacher: "-", room: "-" }
+        ],
+        "Вторник": [
+            { time: "08:30 09:20", subject: "Анализ и разраб систем (лек)", teacher: "Исмаилов Х.Б", room: "705Г" },
+            { time: "09:20 09:35", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "09:35 10:25", subject: "Анализ и разраб систем (лек)", teacher: "Исмаилов Х.Б", room: "705Г" },
+            { time: "10:25 10:40", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "10:40 11:30", subject: "Анализ и разраб систем (лаб)", teacher: "Исмаилов Х.Б", room: "710Г" },
+            { time: "11:30 11:45", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "11:45 12:35", subject: "Анализ и разраб систем (лаб)", teacher: "Исмаилов Х.Б", room: "710Г" },
+            { time: "12:35 12:50", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "13:40 14:00", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "14:50 15:05", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "15:55 16:10", subject: "Перерыв", teacher: "-", room: "-" }
+        ],
+        "Среда": [
+            { time: "08:30 09:20", subject: "-", teacher: "-", room: "-" },
+            { time: "09:20 09:35", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "09:35 10:25", subject: "-", teacher: "-", room: "-" },
+            { time: "10:25 10:40", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "10:40 11:30", subject: "Конфигурирования в среде 1С (лек)", teacher: "Боташева А.О", room: "705Г" },
+            { time: "11:30 11:45", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "11:45 12:35", subject: "Конфигурирования в среде 1С (лек)", teacher: "Боташева А.О", room: "705Г" },
+            { time: "12:35 12:50", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "12:50 13:40", subject: "Разработка приложений и Web-сервисов на С# (лаб)", teacher: "Асилова Э.А", room: "321Гл" },
+            { time: "13:40 14:00", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "14:00 14:50", subject: "Разработка приложений и Web-сервисов на С# (лаб)", teacher: "Асилова Э.А", room: "321Гл" },
+            { time: "14:50 15:05", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "15:55 16:10", subject: "Перерыв", teacher: "-", room: "-" }
+        ],
+        "Четверг": [
+            { time: "08:30 09:20", subject: "Разработка приложений в Web-сервисе на С# (лек)", teacher: "Байназарова И", room: "705Г" },
+            { time: "09:20 09:35", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "09:35 10:25", subject: "Разработка приложений в Web-сервисе на С# (лек)", teacher: "Байназарова И", room: "705Г" },
+            { time: "10:25 10:40", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "10:40 11:30", subject: "Анализ и разраб систем (лек)", teacher: "Исмаилов Х.Б", room: "806Г" },
+            { time: "11:30 11:45", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "11:45 12:35", subject: "Конфигурирования в среде 1С (лаб)", teacher: "Асилова Э.А", room: "806Г" },
+            { time: "12:35 12:50", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "12:50 13:40", subject: "Разработка приложений и Web-сервисов на С# (лаб)", teacher: "Асилова Э.А", room: "806Г" },
+            { time: "13:40 14:00", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "14:50 15:05", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "15:55 16:10", subject: "Перерыв", teacher: "-", room: "-" }
+        ],
+        "Пятница": [
+            { time: "08:30 09:20", subject: "Разработка приложений в Web-сервисе на С# (лек)", teacher: "Байназарова И", room: "703Г" },
+            { time: "09:20 09:35", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "09:35 10:25", subject: "Конфигурирования в среде 1С (лек)", teacher: "Боташева А.О", room: "706Г" },
+            { time: "10:25 10:40", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "10:40 11:30", subject: "Анализ и разраб систем (лаб)", teacher: "Исмаилов Х.Б", room: "806Г" },
+            { time: "11:30 11:45", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "11:45 12:35", subject: "Разработка Web-сервисов (Java EE) (лек)", teacher: "Боташева А.О", room: "706Г" },
+            { time: "12:35 12:50", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "12:50 13:40", subject: "Разработка Web-сервисов (Java EE) (лаб)", teacher: "Асилова Э.А", room: "318Гл" },
+            { time: "13:40 14:00", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "14:00 14:50", subject: "Разработка Web-сервисов (Java EE) (лаб)", teacher: "Асилова Э.А", room: "318Гл" },
+            { time: "14:50 15:05", subject: "Перерыв", teacher: "-", room: "-" },
+            { time: "15:05 15:55", subject: "Разработка Web-сервисов (Java EE)", teacher: "Асилова Э.А", room: "318Гл" },
+            { time: "15:55 16:10", subject: "Перерыв", teacher: "-", room: "-" }
+        ]
+    };
+
+    const days = Object.keys(initialData);
+    let currentDay = days[0];
+    let scheduleData;
+
+    const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+    const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+    // ---------- Перевод "08:30" в минуты ----------
+    function timeToMinutes(timeStr) {
+        const parts = timeStr.split(':');
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        return h * 60 + m;
+    }
+
+    // ---------- Сортировка занятий дня по времени начала ----------
+    function sortDay(day) {
+        scheduleData[day].sort(function(a, b) {
+            const startA = timeToMinutes(a.time.split(' ')[0]);
+            const startB = timeToMinutes(b.time.split(' ')[0]);
+            return startA - startB;
+        });
+    }
+
+    function sortAllDays() {
+        days.forEach(function(day) { sortDay(day); });
+    }
+
+    // ---------- localStorage ----------
+    function loadData() {
+        const saved = localStorage.getItem('scheduleData');
+        scheduleData = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(initialData));
+        sortAllDays();
+    }
+
+    function saveData() {
+        localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+    }
+
+    function resetSchedule() {
+        if (confirm('Сбросить расписание к исходному варианту?')) {
+            localStorage.removeItem('scheduleData');
+            loadData();
+            renderAll();
+        }
+    }
+
+    // ---------- Часы вверху страницы ----------
+    function updateClock() {
+        const now = new Date();
+
+        const dayName = dayNames[now.getDay()];
+        const day = now.getDate();
+        const month = monthNames[now.getMonth()];
+        const year = now.getFullYear();
+
+        document.getElementById('clockDate').textContent = dayName + ', ' + day + ' ' + month + ' ' + year + ' г.';
+
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('clockTime').textContent = hh + ':' + mm + ':' + ss;
+    }
+
+    // ---------- Вкладки дней ----------
+    function renderTabs() {
+        const tabsDiv = document.getElementById('tabs');
+        tabsDiv.innerHTML = '';
+        days.forEach(function(day) {
+            const btn = document.createElement('button');
+            btn.className = 'tab-btn' + (day === currentDay ? ' active' : '');
+            btn.textContent = day;
+            btn.onclick = function() { currentDay = day; renderAll(); };
+            tabsDiv.appendChild(btn);
+        });
+    }
+
+    // ---------- Выпадающий список дней в форме добавления ----------
+    function renderDaySelect() {
+        const select = document.getElementById('newDay');
+        select.innerHTML = '';
+        days.forEach(function(day) {
+            const option = document.createElement('option');
+            option.value = day;
+            option.textContent = day;
+            if (day === currentDay) option.selected = true;
+            select.appendChild(option);
+        });
+    }
+
+    // ---------- Форматирование обратного отсчёта "чч:мм:сс" или "мм:сс" ----------
+    function formatCountdown(totalSeconds) {
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+        const mm = String(m).padStart(2, '0');
+        const ss = String(s).padStart(2, '0');
+        if (h > 0) {
+            return h + ':' + mm + ':' + ss;
+        }
+        return mm + ':' + ss;
+    }
+
+    // ---------- Вычисление текста и класса для колонки "Осталось" ----------
+    function getCountdownInfo(lesson, nowSeconds) {
+        const parts = lesson.time.split(' ');
+        const start = parts[0];
+        const end = parts[1];
+        if (!start || !end) {
+            return { text: '-', cls: 'idle' };
+        }
+
+        const startSec = timeToMinutes(start) * 60;
+        const endSec = timeToMinutes(end) * 60;
+
+        if (nowSeconds < startSec) {
+            const diff = startSec - nowSeconds;
+            const label = 'до начала: ' + formatCountdown(diff);
+            const cls = diff <= 300 ? 'soon' : 'idle';
+            return { text: label, cls: cls };
+        } else if (nowSeconds >= startSec && nowSeconds <= endSec) {
+            const diff = endSec - nowSeconds;
+            return { text: 'осталось: ' + formatCountdown(diff), cls: 'live' };
+        } else {
+            return { text: 'завершено', cls: 'idle' };
+        }
+    }
+
+    // ---------- Таблица ----------
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        const now = new Date();
+        const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+        scheduleData[currentDay].forEach(function(lesson, index) {
+            const tr = document.createElement('tr');
+
+            const isBreak = lesson.subject === 'Перерыв' || lesson.subject === 'Обед';
+            if (isBreak) tr.classList.add('break-row');
+
+            const parts = lesson.time.split(' ');
+            const start = parts[0];
+            const end = parts[1];
+            if (start && end) {
+                const startM = timeToMinutes(start);
+                const endM = timeToMinutes(end);
+                const nowM = now.getHours() * 60 + now.getMinutes();
+                if (nowM >= startM && nowM <= endM) {
+                    tr.classList.add('current-lesson');
+                }
+            }
+
+            const countdown = getCountdownInfo(lesson, nowSeconds);
+
+            tr.innerHTML = "<td>" + lesson.time + "</td>" +
+                "<td>" + lesson.subject + "</td>" +
+                "<td>" + lesson.teacher + "</td>" +
+                "<td>" + lesson.room + "</td>" +
+                "<td class='countdown " + countdown.cls + "'>" + countdown.text + "</td>" +
+                "<td><button class='del-btn' onclick='deleteLesson(" + index + ")'>Удалить</button></td>";
+
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderAll() {
+        renderTabs();
+        renderDaySelect();
+        renderTable();
+    }
+
+    // ---------- Удаление ----------
+    function deleteLesson(index) {
+        scheduleData[currentDay].splice(index, 1);
+        saveData();
+        renderTable();
+    }
+
+    // ---------- Добавление ----------
+    function addLesson() {
+        const day = document.getElementById('newDay').value;
+        const time = document.getElementById('newTime').value.trim();
+        const subject = document.getElementById('newSubject').value.trim();
+        const teacher = document.getElementById('newTeacher').value.trim();
+        const room = document.getElementById('newRoom').value.trim();
+
+        if (!time || !subject) {
+            alert('Заполните хотя бы время и предмет');
+            return;
+        }
+
+        scheduleData[day].push({ time: time, subject: subject, teacher: teacher, room: room });
+        sortDay(day);
+        saveData();
+
+        currentDay = day;
+        renderAll();
+
+        document.getElementById('newTime').value = '';
+        document.getElementById('newSubject').value = '';
+        document.getElementById('newTeacher').value = '';
+        document.getElementById('newRoom').value = '';
+    }
+
+    // ---------- Запуск ----------
+    loadData();
+    renderAll();
+    updateClock();
+
+    // Часы и колонка "Осталось" обновляются каждую секунду
+    setInterval(function() {
+        updateClock();
+        renderTable();
+    }, 1000);
+</script>
+
+</body>
+</html>
